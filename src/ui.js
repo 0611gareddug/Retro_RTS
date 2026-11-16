@@ -34,6 +34,8 @@
     st.textContent = Object.keys(ICONS).map((k) => `.ic-${k}{background-image:url(${R.pixIcon(k, k === 'menu' || k === 'full' ? '#fff3d8' : null)})}`).join('\n');
     document.head.appendChild(st);
     if (R.isMobile()) document.body.classList.add('mobile');
+    // 패널·상단바 높이가 바뀌면 왼쪽 버튼 영역을 다시 맞춘다 (프레임당 최대 1번)
+    if (window.ResizeObserver) { let q = 0; const ro = new ResizeObserver(() => { if (!q) q = requestAnimationFrame(() => { q = 0; UI.measure(); }); }); ro.observe($('#panel')); ro.observe($('#topbar')); }
     $('.ver').textContent = 'v' + R.VERSION;
     // 그룹 버튼
     const gb = $('#groups');
@@ -78,11 +80,13 @@
   };
 
   // ── 설정 ──
-  UI.settings = R.store.get('settings', { q: R.isMobile() ? 1 : 2, bgm: 60, sfx: 70, ui: R.isMobile() ? 110 : 100, shake: true });
+  UI.settings = R.store.get('settings', { q: R.isMobile() ? 1 : 2, bgm: 60, sfx: 70, ui: 100, shake: true, v: 2 });
+  if (!UI.settings.v) { UI.settings.ui = 100; UI.settings.v = 2; } // 이전 버전의 큰 기본 UI 크기 정리
   UI.applySettings = function () {
     const s = UI.settings;
+    // 화면의 짧은 쪽 길이에 맞춰 UI를 자동으로 줄인다 (가로 휴대폰은 높이가 320~430px)
     const small = Math.min(innerWidth, innerHeight);
-    const auto = small < 430 ? 0.74 : small < 560 ? 0.84 : 1;
+    const auto = small < 360 ? 0.64 : small < 430 ? 0.7 : small < 560 ? 0.8 : small < 800 ? 0.9 : 1;
     document.documentElement.style.setProperty('--u', (s.ui / 100 * auto).toFixed(3));
     R.Audio.setVol(s.bgm / 100, s.sfx / 100);
     if (R.App && R.App.rd) { R.App.rd.quality = s.q; R.App.rd.uiScale = s.ui / 100 * auto; R.App.rd.shakeOn = s.shake; R.App.rd.resize(); }
@@ -90,7 +94,11 @@
     R.store.set('settings', s);
     requestAnimationFrame(UI.measure);
   };
-  UI.measure = function () { const tb = $('#topbar'); if (tb && tb.offsetHeight) document.documentElement.style.setProperty('--tbh', tb.offsetHeight + 'px'); };
+  UI.measure = function () {
+    const tb = $('#topbar'), pn = $('#panel'), st = document.documentElement.style;
+    if (tb && tb.offsetHeight) st.setProperty('--tbh', tb.offsetHeight + 'px');
+    if (pn) st.setProperty('--ph', pn.offsetHeight + 'px');
+  };
   UI.openSettings = function (back) {
     const s = UI.settings;
     const q = $('#setQ'); q.innerHTML = '';
@@ -346,10 +354,26 @@
     $('#placeBar').classList.remove('hidden');
     $('#placeInfo').textContent = d.name + ' — ' + (d.line ? (mob ? '시작점과 끝점을 차례로 누르세요' : '드래그해서 그리세요') : (mob ? '지을 곳을 누르세요' : '지을 곳을 클릭하세요 (Shift: 연속 건설)'));
     $('#bPlaceOk').style.display = mob ? '' : 'none';
+    document.body.classList.add('placing');
+    // 모바일: 미리보기를 화면 가운데에 먼저 띄워서 바로 위치를 확인할 수 있게 함
+    if (mob && !d.line) {
+      // 화면 가운데에서 가장 가까운 지을 수 있는 칸을 찾아 미리보기를 놓는다 (없으면 가운데)
+      const rd = R.App.rd, c = rd.s2t(rd.W / 2, rd.H / 2), h = d.size / 2;
+      const cx = Math.floor(c.x - h + 0.5), cy = Math.floor(c.y - h + 0.5);
+      // 건물 뒤(화면 위쪽)에 가려지는 자리보다 앞쪽 자리를 우선한다
+      let best = null, bs = 1e9;
+      for (let dy = -10; dy <= 10; dy++) for (let dx = -10; dx <= 10; dx++) {
+        const sc = Math.hypot(dx, dy) + (dx + dy < 0 ? 5 : 0);
+        if (sc >= bs || G.canPlace(UI.me, type, cx + dx, cy + dy)) continue;
+        bs = sc; best = rd.t2s(cx + dx + h, cy + dy + h);
+      }
+      if (!best || best.x < 0 || best.y < 0 || best.x > rd.W || best.y > rd.H) best = { x: rd.W / 2, y: rd.H / 2 };
+      R.Input.updateGhost(best.x, best.y);
+    }
     UI.updatePanel(true);
   };
   UI.cancelPlace = function () {
-    UI.placing = null; if (R.App.rd) R.App.rd.ghost = null; $('#placeBar').classList.add('hidden');
+    UI.placing = null; if (R.App.rd) R.App.rd.ghost = null; $('#placeBar').classList.add('hidden'); document.body.classList.remove('placing');
     if (UI.G) UI.updatePanel(true);
   };
   UI.confirmPlace = function () {

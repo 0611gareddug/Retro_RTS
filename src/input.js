@@ -64,7 +64,9 @@
     I.mx = e.clientX; I.my = e.clientY;
     if (!G()) return;
     const p = I.ptrs.get(e.pointerId);
-    if (R.UI.placing && (!p || p.type === 'mouse')) updateGhost(e.clientX, e.clientY);
+    // 건설 미리보기는 맵(캔버스) 위의 마우스만 따라간다. 터치는 탭할 때만 옮긴다.
+    // (건설·취소 버튼 등 HUD 위의 움직임이 미리보기 위치를 바꾸면 버튼 자리에 지어지는 버그가 생김)
+    if (R.UI.placing && (p ? p.type === 'mouse' : e.pointerType === 'mouse' && e.target === I.cv)) updateGhost(e.clientX, e.clientY);
     if (!p) return;
     p.x = e.clientX; p.y = e.clientY;
     const dist = Math.hypot(p.x - p.x0, p.y - p.y0);
@@ -133,6 +135,7 @@
     return out;
   }
 
+  I.updateGhost = (sx, sy) => updateGhost(sx, sy);
   function updateGhost(sx, sy) {
     const pl = R.UI.placing; if (!pl) return;
     const t = rd().s2t(sx, sy); const d = B[pl.type];

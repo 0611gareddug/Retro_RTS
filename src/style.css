@@ -149,18 +149,39 @@ img,.ic{image-rendering:pixelated}
 #rotate{position:fixed;left:50%;top:calc(var(--u)*90px);transform:translateX(-50%);background:#1a1220e8;padding:8px 14px;z-index:30;font-size:13px;box-shadow:0 0 0 2px var(--edge);pointer-events:none}
 #block{position:fixed;inset:0;background:#000;color:#fff;display:flex;align-items:center;justify-content:center;z-index:999;font-size:20px;text-align:center;padding:20px}
 
-/* 모바일 */
-body.mobile #panel{width:calc(100vw - var(--u)*150px);min-height:calc(var(--u)*112px);max-height:40vh}
-body.mobile #mm{width:calc(var(--u)*132px);height:calc(var(--u)*66px)}
+/* 모바일 — 가로 휴대폰 기준으로 작게, 맵이 최대한 보이도록 */
+body.mobile{--mmw:calc(var(--u)*128px + 3px)}
+body.mobile #topbar{gap:calc(var(--u)*5px);flex-wrap:nowrap;padding:calc(var(--u)*3px) calc(var(--u)*5px);padding-top:max(env(safe-area-inset-top),calc(var(--u)*3px));padding-left:max(env(safe-area-inset-left),calc(var(--u)*5px));padding-right:max(env(safe-area-inset-right),calc(var(--u)*5px))}
+body.mobile .tb{min-width:calc(var(--u)*32px);min-height:calc(var(--u)*30px);padding:calc(var(--u)*4px) calc(var(--u)*7px)}
 body.mobile .stat small{display:none}
-body.mobile #topbar{gap:calc(var(--u)*6px);flex-wrap:wrap}
-body.mobile #placeBar{bottom:auto;top:calc(var(--tbh,52px) + 6px)}
-body.mobile #toasts{top:calc(var(--tbh,52px) + 56px)}
-body.mobile .ib{width:calc(var(--u)*68px)}
+body.mobile .stat .prog{width:calc(var(--u)*56px)}
+body.mobile #side{left:max(env(safe-area-inset-left),calc(var(--u)*5px));top:calc(var(--tbh,40px) + var(--u)*5px);display:grid;grid-auto-flow:column;grid-template-rows:repeat(auto-fill,calc(var(--u)*30px));gap:calc(var(--u)*5px);max-height:calc(100vh - var(--tbh,40px) - var(--ph,90px) - var(--u)*14px);max-height:calc(100dvh - var(--tbh,40px) - var(--ph,90px) - var(--u)*14px)}
+body.mobile #groups{display:contents}
+body.mobile .sb,body.mobile #groups .sb{min-width:calc(var(--u)*44px);min-height:0;height:calc(var(--u)*30px);padding:0 calc(var(--u)*4px);font-size:calc(var(--u)*12px)}
+body.mobile #panel{width:auto;max-width:calc(100vw - var(--mmw));min-height:0;max-height:44vh;max-height:44dvh;padding:calc(var(--u)*5px) calc(var(--u)*6px);padding-left:max(env(safe-area-inset-left),calc(var(--u)*6px));padding-bottom:max(env(safe-area-inset-bottom),calc(var(--u)*5px))}
+body.mobile #panel h3{font-size:calc(var(--u)*13px);margin-bottom:calc(var(--u)*4px);white-space:nowrap;overflow:hidden}
+body.mobile #panel h3 small{overflow:hidden;text-overflow:ellipsis}
+body.mobile #panel h3 img{width:calc(var(--u)*28px)!important}
+body.mobile .tabs{gap:calc(var(--u)*5px);margin-bottom:calc(var(--u)*4px)}
+body.mobile .tabs button{padding:calc(var(--u)*3px) calc(var(--u)*10px);font-size:calc(var(--u)*12px)}
+body.mobile #panel .grid{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;padding:2px 2px 4px;scrollbar-width:none;touch-action:pan-x}
+body.mobile #panel .grid::-webkit-scrollbar{display:none}
+body.mobile .ib{flex:none;width:calc(var(--u)*60px);min-height:calc(var(--u)*64px);font-size:calc(var(--u)*10px)!important}
+body.mobile .ib img{width:calc(var(--u)*32px);height:calc(var(--u)*32px)}
+body.mobile .ib .cost{font-size:calc(var(--u)*10px)}
+body.mobile .acts .btn{padding:calc(var(--u)*5px) calc(var(--u)*8px)}
+body.mobile #mmWrap{padding:calc(var(--u)*4px);padding-right:max(env(safe-area-inset-right),calc(var(--u)*4px));padding-bottom:max(env(safe-area-inset-bottom),calc(var(--u)*4px))}
+body.mobile #mm{width:calc(var(--u)*120px);height:calc(var(--u)*60px)}
+body.mobile #toasts{top:calc(var(--tbh,40px) + 6px)}
+body.mobile .toast{padding:calc(var(--u)*5px) calc(var(--u)*10px);font-size:calc(var(--u)*13px)}
+body.mobile #placeBar{top:auto;left:calc(50vw - var(--mmw) / 2);bottom:max(env(safe-area-inset-bottom),calc(var(--u)*8px));gap:calc(var(--u)*8px);padding:calc(var(--u)*5px) calc(var(--u)*8px);max-width:calc(100vw - var(--mmw) - 12px)}
+body.mobile #placeBar .btn{min-width:calc(var(--u)*64px)}
+body.mobile #placeInfo{font-size:calc(var(--u)*12px)}
+body.mobile.placing #panel{display:none}
+body.mobile #tut{width:min(calc(var(--u)*300px),60vw);padding:calc(var(--u)*8px);font-size:calc(var(--u)*13px)}
+body.mobile #chat{bottom:calc(var(--u)*80px)}
 @media (max-width:700px){
   #sTime b{font-size:12px}
-  #panel{width:100vw!important;bottom:calc(var(--u)*86px)!important;max-height:36vh!important}
-  #mmWrap{left:auto;right:0;bottom:0}
   #sEra .prog{width:40px}
   .stat{font-size:calc(var(--u)*13px)}
   #bEraUp{padding:4px 6px}
