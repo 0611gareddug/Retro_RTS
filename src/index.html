@@ -19,24 +19,29 @@
 <div id="hud" class="hidden">
   <div id="topbar">
     <button class="tb" id="bMenu" title="메뉴 (Esc)"><i class="ic ic-menu"></i></button>
-    <div class="stat" id="sMoney"><i class="ic ic-coin"></i><b>0</b><small>+0/초</small></div>
-    <div class="stat" id="sPop"><i class="ic ic-pop"></i><b>0/4</b></div>
-    <div class="stat" id="sEra"><i class="ic ic-castle"></i><div><b>부족 시대</b><div class="prog"><i></i></div></div></div>
-    <button class="btn sm" id="bEraUp" data-tut="era">시대 발전</button>
-    <div class="stat" id="sTime"><i class="ic ic-clock"></i><b>0:00</b></div>
-    <div id="speedBox"><button class="tb" id="bPause" title="일시정지 (P)">II</button><button class="tb" id="bSpeed" title="배속">1x</button></div>
+    <div class="stat" id="sMoney" data-tip="금화 (초당 수입)"><i class="ic ic-coin"></i><b>0</b><small>+0/초</small></div>
+    <div class="stat" id="sPop" data-tip="부대 수 / 최대 부대 수 (집을 지으면 늘어요)"><i class="ic ic-pop"></i><b>0/4</b></div>
+    <button class="btn sm" id="bEraUp" data-tut="era"><span></span><i class="ep"></i></button>
+    <span class="tbgap"></span>
     <button class="tb" id="bChat" title="채팅" style="display:none"><i class="ic ic-chat"></i></button>
     <button class="tb" id="bFull" title="전체화면"><i class="ic ic-full"></i></button>
   </div>
+  <div id="goal" class="hidden"><i class="ic ic-flag"></i><span></span></div>
   <div id="toasts"></div>
   <div id="side">
-    <button class="sb" id="bSelMode" title="드래그 선택">선택</button>
+    <button class="sb cmd" id="bAtkAll" data-tut="atkall" title="전군 공격: 모든 부대가 적 본성으로 진격"><i class="ic ic-swords"></i><span>전군 공격</span></button>
+    <button class="sb cmd" id="bDefAll" data-tut="defall" title="전군 방어: 모든 부대가 본성 앞으로"><i class="ic ic-shield"></i><span>전군 방어</span></button>
     <button class="sb" id="bSelArmy" title="군대 전체 선택">군대</button>
-    <button class="sb" id="bHome" title="본성으로">본성</button>
-    <div id="groups"></div>
+    <button class="sb" id="bMore" title="더보기">더보기</button>
+    <div id="sideMore" class="hidden">
+      <button class="sb" id="bSelMode" title="드래그 선택">선택</button>
+      <button class="sb" id="bHome" title="본성으로">본성</button>
+      <div id="groups"></div>
+    </div>
   </div>
   <div id="sandbox" class="hidden"></div>
-  <div id="panel"></div>
+  <div id="panel" class="hidden"></div>
+  <button class="btn" id="bBuild" data-tut="build" title="건설 (B)"><i class="ic ic-hammer"></i><span>건설</span></button>
   <div id="mmWrap"><canvas id="mm"></canvas></div>
   <div id="placeBar" class="hidden"><span id="placeInfo"></span><button class="btn ok" id="bPlaceOk">건설</button><button class="btn" id="bPlaceNo">취소</button></div>
   <div id="cmdHint" class="hidden"></div>
@@ -103,6 +108,7 @@
       <label>효과음 <input type="range" id="setSfx" min="0" max="100"></label>
       <label>UI 크기 <input type="range" id="setUi" min="60" max="140" step="10"></label>
       <label class="chk"><input type="checkbox" id="setShake"> 화면 흔들림</label>
+      <label class="chk"><input type="checkbox" id="setGoal"> 다음 할 일 안내</label>
       <div class="row end"><button class="btn ok" data-back>확인</button></div>
     </div>
   </section>
@@ -116,6 +122,7 @@
 
   <section id="scPause" class="screen hidden overlay">
     <div class="card"><h2>메뉴</h2>
+      <div class="row" id="pauseInfo" style="margin:0"><span class="stat" id="sTime"><i class="ic ic-clock"></i><b>0:00</b></span><span id="speedBox"><button class="btn sm" id="bSpeed" title="배속">배속 1x</button></span></div>
       <button class="btn big" id="bResume">계속하기</button>
       <button class="btn big" id="bSave">저장하기</button>
       <button class="btn big" id="bPauseSet">설정</button>

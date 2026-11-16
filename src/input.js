@@ -259,19 +259,19 @@
     const n = parseInt(e.key, 10);
     if (n >= 1 && n <= 9) {
       if (e.ctrlKey || e.metaKey) { e.preventDefault(); UI.setGroup(n); }
-      else if (!UI.sel.size || UI.myIds().length) UI.selectGroup(n);
+      else if (!UI.buildOpen && (!UI.sel.size || UI.myIds().length)) UI.selectGroup(n);
       else { // 건물 메뉴 단축키
-        const k = R.BUILD_MENU[UI.tab].keys[n - 1]; if (k) UI.startPlace(k);
+        const k = UI.menuKeys(UI.tab)[n - 1]; if (k) UI.startPlace(R.resolveBuild(k, g.players[UI.me].era));
       }
       return;
     }
     if (e.code === 'KeyA' && UI.myIds().length) { I.setMode('amove'); return; }
     if (e.code === 'KeyS' && UI.myIds().length) { R.App.cmd({ c: 'stop', ids: UI.myIds() }); return; }
     if (e.code === 'KeyF' && UI.myIds().length) { const ids = UI.myIds(); const f = g.ents[ids[0]].form === 'col' ? 'line' : 'col'; R.App.cmd({ c: 'form', ids, f }); setTimeout(() => UI.updatePanel(true), 60); return; }
-    if (e.code === 'KeyB') { UI.select([]); return; }
+    if (e.code === 'KeyB') { UI.toggleBuild(); return; }
     if (e.code === 'KeyP' && g.mode !== 'online') { R.App.togglePause(); return; }
     if (e.code === 'Space') { e.preventDefault(); const b = g.ents[g.players[UI.me].baseId]; if (b) rd().centerOn(b.x + 2, b.y + 2); return; }
-    if (e.code === 'Tab') { e.preventDefault(); UI.tab = (UI.tab + 1) % 3; UI.updatePanel(true); }
+    if (e.code === 'Tab') { e.preventDefault(); UI.tab = (UI.tab + 1) % 3; if (!UI.buildOpen) UI.toggleBuild(true); else UI.updatePanel(true); }
   }
 
   // 매 프레임: 키보드/가장자리 스크롤

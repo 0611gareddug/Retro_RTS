@@ -63,8 +63,11 @@
       }
     };
     $('#bResMenu').onclick = () => { if (R.Net && R.Net.active) R.Net.leave(); App.toMenu(); };
-    $('#bPause').onclick = () => App.togglePause();
     $('#bSpeed').onclick = () => { if (!App.G || App.G.mode === 'online') return; App.G.speed = App.G.speed === 1 ? 2 : 1; R.UI.updateHUD(); };
+    $('#bAtkAll').onclick = () => App.armyAll(true);
+    $('#bDefAll').onclick = () => App.armyAll(false);
+    $('#bMore').onclick = () => { const m = $('#sideMore'); m.classList.toggle('hidden'); const open = !m.classList.contains('hidden'); $('#bMore').classList.toggle('on', open); $('#bMore').textContent = open ? '접기' : '더보기'; requestAnimationFrame(R.UI.measure); };
+    $('#bBuild').onclick = () => R.UI.toggleBuild();
     $('#bEraUp').onclick = () => App.cmd({ c: 'era' });
     $('#bFull').onclick = () => App.fullscreen();
     $('#bChat').onclick = () => { $('#chat').classList.toggle('hidden'); };
@@ -74,6 +77,30 @@
     $('#bSelArmy').onclick = () => { const ids = App.G.squads().filter((s) => s.owner === App.me && s.u !== 'builder').map((s) => s.id); R.UI.select(ids); };
     $('#bHome').onclick = () => { const b = App.G.ents[App.G.players[App.me].baseId]; if (b) App.rd.centerOn(b.x + 2, b.y + 2); };
     $('#tutSkip').onclick = () => { if (R.Tut) R.Tut.stop(); App.toMenu(); };
+  };
+
+  // 전군 공격(가장 가까운 적 본성으로 공격 이동) / 전군 방어(내 본성 앞으로 집결)
+  App.armyAll = function (attack) {
+    const G = App.G; if (!G) return;
+    const pl = G.players[App.me];
+    const ids = G.squads().filter((s) => s.owner === App.me && s.u !== 'builder' && !s.rout).map((s) => s.id);
+    if (!ids.length) { R.UI.toast('아직 부대가 없어요. 병영 같은 소환시설에서 부대를 뽑으세요', 'err', 2200); R.Audio.sfx('error'); return; }
+    const base = G.ents[pl.baseId]; if (!base) return;
+    let x, y;
+    if (attack) {
+      let best = null, bd = 1e9;
+      for (const o of G.players) {
+        if (!o.alive || o.team === pl.team) continue;
+        const eb = G.ents[o.baseId]; if (!eb) continue;
+        const d = R.dist(eb.x, eb.y, base.x, base.y); if (d < bd) { bd = d; best = eb; }
+      }
+      if (!best) return;
+      x = best.x + best.s / 2; y = best.y + best.s / 2;
+    } else { x = base.x + 2 + pl.fwd.x * 5; y = base.y + 2 + pl.fwd.y * 5; }
+    App.cmd({ c: 'move', ids, x, y, am: true });
+    App.rd.marks.push({ x, y, t: 1.2, c: attack ? '#ff5a4a' : '#7ab0ff' });
+    R.UI.toast(attack ? '전군 공격! 모든 부대가 적 본성으로 진격해요' : '전군 방어! 모든 부대가 본성 앞으로 모여요', attack ? 'alert' : 'good', 1800);
+    R.Audio.sfx('click');
   };
 
   App.fullscreen = function () {
@@ -105,7 +132,7 @@
   App.setup = function (mode) {
     const UI = R.UI;
     const prof = R.store.get('profile', { name: '', color: 0 });
-    App.setupState = { mode, map: prof.map || 'plains', diff: prof.diff != null ? prof.diff : 1, color: prof.color || 0 };
+    App.setupState = { mode, map: prof.map || 'plains', diff: prof.diff != null ? prof.diff : 3, color: prof.color || 0 };
     $('#setupTitle').textContent = mode === 'ai' ? 'AI 대전 (1:1)' : '샌드박스';
     $('#inName').value = prof.name || '';
     $('#diffRow').style.display = mode === 'ai' ? '' : 'none';
@@ -123,7 +150,7 @@
       b.onclick = () => { st.map = m.id; App.renderSetup(); }; mp.appendChild(b);
     }
     const dp = $('#diffPick'); dp.innerHTML = '';
-    R.DIFF.forEach((d, i) => { const b = document.createElement('button'); b.className = 'btn' + (st.diff === i ? ' on' : ''); b.textContent = d.name; b.onclick = () => { st.diff = i; App.renderSetup(); }; dp.appendChild(b); });
+    R.DIFF_ORDER.forEach((i) => { const d = R.DIFF[i]; const b = document.createElement('button'); b.className = 'btn' + (st.diff === i ? ' on' : ''); b.textContent = d.name; b.onclick = () => { st.diff = i; App.renderSetup(); }; dp.appendChild(b); });
   };
   App._prev = {};
   App.preview = function (id, n) { const k = id + n; if (!App._prev[k]) App._prev[k] = R.UI.mapPreview(id, n); const c = document.createElement('canvas'); c.width = 128; c.height = 64; c.getContext('2d').drawImage(App._prev[k], 0, 0); return c; };
@@ -148,7 +175,7 @@
     R.Audio.play('peace');
     App.checkRotate();
     const p = G.players[me];
-    if (G.mode === 'ai') { const e = G.players.find((x) => x.isAI); R.UI.toast(`${e.name}(${R.DIFF[G.diff].name})와의 전투가 시작됐어요!`, 'big', 3000); }
+    if (G.mode === 'ai') { const e = G.players.find((x) => x.isAI); R.UI.toast(`${e.name}(${R.DIFF[G.diff].name})와의 전투가 시작됐어요!`, 'big', 3000); if (R.DIFF[G.diff].passive) R.UI.toast('먼저 공격하기 전까지 AI는 공격해 오지 않아요', 'good', 4500); }
     App.lastAch = { imperial: false };
     void p;
   };

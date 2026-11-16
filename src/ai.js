@@ -39,7 +39,9 @@
     const builders = sqs.filter((s) => s.u === 'builder');
     const pop = G.pop(p);
     const T = G.time;
-    const hard = G.diff >= 2, easy = G.diff === 0;
+    const hard = G.diff === 2, easy = G.diff === 0 || G.diff === 3;
+    const passive = !!diff.passive && !pl.provoked; // 아주 쉬움: 도발당하기 전에는 공격 안 함
+    const vEasy = !!diff.passive;
     const underCon = bs.filter((b) => b.built < 1).length;
 
     // ── 위협 감지 ──
@@ -115,7 +117,7 @@
     const enemyComp = { inf: 0, rng: 0, cav: 0, siege: 0 };
     for (const s of G.squads()) if (G.players[s.owner].team !== team && enemyComp[U[s.u].cls] != null) enemyComp[U[s.u].cls]++;
     const spend = pl.money - reserve;
-    if (pop.used < pop.cap) {
+    if (pop.used < pop.cap && !(vEasy && army.length >= 8)) { // 아주 쉬움: 부대 8개까지만
       const prods = bs.filter((b) => B[b.type].prodCls && b.built >= 1 && b.queue.length < (hard ? 2 : 1));
       for (const b of prods) {
         const u = pickUnit(G, pl, B[b.type].prodCls, enemyComp, easy);
@@ -154,13 +156,13 @@
         }
       }
       // 공격 웨이브
-      const want = plan.waveSize[pl.era] * (easy ? 0.8 : hard ? 1 : 0.9);
-      const minT = plan.firstWave * (easy ? 1.5 : hard ? 0.85 : 1);
-      if (T > minT && (free.length >= want || (pop.used >= pop.cap - 1 && free.length >= 4)) && T - ai.lastWave > (easy ? 150 : 90)) {
+      const want = vEasy ? Math.max(2, Math.min(4, plan.waveSize[pl.era] * 0.4)) : plan.waveSize[pl.era] * (easy ? 0.8 : hard ? 1 : 0.9);
+      const minT = vEasy ? 0 : plan.firstWave * (easy ? 1.5 : hard ? 0.85 : 1);
+      if (!passive && T > minT && (free.length >= want || (pop.used >= pop.cap - 1 && free.length >= 4)) && T - ai.lastWave > (vEasy ? 180 : easy ? 150 : 90)) {
         const tgt = pickTarget(G, pl, base);
         if (tgt) {
           ai.lastWave = T; ai.phase = 'gather'; ai.gatherT = T;
-          ai.wave = free.map((s) => s.id); ai.tgtP = tgt.owner; ai.tgtId = tgt.id;
+          ai.wave = (vEasy ? free.slice(0, Math.ceil(want)) : free).map((s) => s.id); ai.tgtP = tgt.owner; ai.tgtId = tgt.id;
           const bc = { x: base.x + 2, y: base.y + 2 }, c = { x: tgt.x + tgt.s / 2, y: tgt.y + tgt.s / 2 };
           ai.stage = { x: R.lerp(bc.x, c.x, 0.45), y: R.lerp(bc.y, c.y, 0.45) };
           G.exec({ c: 'move', p, ids: ai.wave, x: ai.stage.x, y: ai.stage.y, am: true });

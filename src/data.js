@@ -72,8 +72,11 @@
   const BUILD_MENU = [
     { tab: '경제', keys: ['house', 'farm', 'mill', 'mine', 'market', 'smith'] },
     { tab: '군사', keys: ['barracks', 'range', 'stable', 'workshop'] },
-    { tab: '방어', keys: ['tower_wood', 'tower_stone', 'wall_wood', 'gate_wood', 'stake', 'wall_stone', 'gate_stone'] },
+    { tab: '방어', keys: ['tower', 'wall', 'gate', 'stake'] },
   ];
+  // 메뉴에서 합쳐 보이는 건물: 성주 시대부터는 석조로 지어짐
+  const MERGED = { tower: ['tower_wood', 'tower_stone'], wall: ['wall_wood', 'wall_stone'], gate: ['gate_wood', 'gate_stone'] };
+  R.resolveBuild = (k, era) => (MERGED[k] ? MERGED[k][era >= 2 ? 1 : 0] : k);
 
   const ACH = [
     { id: 'firstWin', name: '첫 승리', desc: 'AI 대전에서 1승' },
@@ -97,7 +100,10 @@
     { name: '쉬움', inc: 0.8, react: 2.0 },
     { name: '보통', inc: 1.0, react: 1.0 },
     { name: '어려움', inc: 1.15, react: 0.5 },
+    // 아주 쉬움: 플레이어가 먼저 공격하기 전까지 공격하지 않는다 (저장 호환을 위해 3번에 둠)
+    { name: '아주 쉬움', inc: 0.6, react: 2.5, passive: true },
   ];
+  const DIFF_ORDER = [3, 0, 1, 2]; // 화면에 보이는 순서
   const PERSONA = { aggro: '공격형', turtle: '수비형', eco: '경제형' };
 
   const MAPS = [
@@ -107,7 +113,7 @@
     { id: 'canyon', name: '산악 협곡', desc: '좁은 통로 · 성벽 방어' },
   ];
 
-  Object.assign(R, { ERAS, U, B, PROD, BUILD_MENU, ACH, DIFF, PERSONA, MAPS });
+  Object.assign(R, { ERAS, U, B, PROD, BUILD_MENU, ACH, DIFF, DIFF_ORDER, PERSONA, MAPS });
   R.START_MONEY = 800;
   R.MAX_POP = 20;
   R.BASE_POP = 4;

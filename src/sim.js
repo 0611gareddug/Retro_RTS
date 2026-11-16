@@ -50,6 +50,7 @@
         money: R.START_MONEY, era: 0, eraProg: null, alive: true, inc: 0,
         genCD: 0, genAlive: false,
         persona: p.persona || null,
+        passive: !!p.ai && !!(R.DIFF[opt.diff != null ? opt.diff : 1] || {}).passive, provoked: false,
         st: { earned: 0, kills: 0, losses: 0, bldLost: 0, bldKilled: 0, incHist: [], armyHist: [], cavOnly: true, tribalOnly: true, anySquad: false, genDied: false, spearCav: 0, trebBld: 0, walls: 0, villagesMax: 0 },
       }));
       this._dirtyTerr = true;
@@ -765,6 +766,7 @@
       const rS = R.squadRadius(s);
       const edge = t.k === 's' ? R.dist(s.x, s.y, t.x, t.y) - R.squadRadius(t) - rS * 0.6 : this.distToRect(s.x, s.y, t) - rS * 0.5;
       const range = d.range ? this.effRange(s) : 0.35 + (d.reach || 0);
+      if (!passing && edge <= range) this.provoke(s, t);
       // 공성: 트레뷔셰 설치
       if (d.minRange && edge < d.minRange && t.k === 's') { s.tgt = 0; return; }
       if (edge > range) {
@@ -846,6 +848,14 @@
     }
 
     // 1타 피해 계산
+    // 아주 쉬움 AI: 사람이 직접 공격 명령(공격·공격 이동)을 내리거나 건물을 치면 반격을 시작한다
+    provoke(s, t) {
+      const tp = this.players[t.owner];
+      if (!tp || !tp.passive || tp.provoked || !this.players[s.owner].human) return;
+      if (!(s.order === 'attack' || s.order === 'amove' || t.k === 'b')) return;
+      tp.provoked = true;
+      this.ev.push({ e: 'alert', p: s.owner, msg: tp.name + '이(가) 반격을 시작해요!', x: t.k === 's' ? t.x : t.x + t.s / 2, y: t.k === 's' ? t.y : t.y + t.s / 2 });
+    }
     calcHit(d, s, t, ax, ay) {
       const owner = s ? s.owner : d.owner;
       const pl = this.players[owner];
