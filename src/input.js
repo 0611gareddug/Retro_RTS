@@ -178,6 +178,8 @@
       }
       const t = rd().s2t(sx, sy); I.command(t.x, t.y, e); return;
     }
+    // PC: 내 부대를 고른 채 적을 왼쪽 클릭해도 공격 (오른쪽 클릭과 같음)
+    if (e && myIds.length && !shift && (e.k === 's' || e.k === 'b') && G().players[e.owner].team !== G().players[UI.me].team) { const t = rd().s2t(sx, sy); I.command(t.x, t.y, e); return; }
     if (e) selectEnt(e, shift, touch);
     else { UI.select([]); }
   }

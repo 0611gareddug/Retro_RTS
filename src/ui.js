@@ -318,7 +318,7 @@
   };
   UI.enemySquadHTML = function (s) {
     const G = UI.G, d = U[s.u], pl = G.players[s.owner];
-    return `<h3><img src="${R.unitIcon(s.u, pl.color)}" style="width:32px"> ${d.name} <small>${esc(pl.name)} · ${s.alive}/${d.n}명</small><button class="btn sm x" data-act="desel" title="닫기">✕</button></h3>${UI.statLine(s.u)}`;
+    return `<h3><img src="${R.unitIcon(s.u, pl.color)}" style="width:32px"> ${d.name} <small>${esc(pl.name)} · ${s.alive}/${d.n}명</small><button class="btn sm x" data-act="desel" title="닫기">✕</button></h3>${UI.statLine(s.u)}${UI.atkThisHTML(s)}`;
   };
   UI.bldHTML = function (b) {
     const G = UI.G, p = G.players[UI.me], d = B[b.type];
@@ -353,10 +353,16 @@
     return `<h3><img src="${R.buildingIcon(b.type, p.color)}" style="width:30px">${d.name}${lvTxt} <small data-hpt="${b.id}"></small><button class="btn sm x" data-act="desel" title="닫기">✕</button></h3>
       <div class="hpbar"><i data-hp="${b.id}"></i></div>${info}${body}`;
   };
+  // 적을 눌렀을 때: 바로 공격시키는 버튼 + 방법 안내
+  UI.atkThisHTML = function (e) {
+    const G = UI.G; if (G.players[e.owner].team === G.players[UI.me].team) return '';
+    const n = G.squads().filter((s) => s.owner === UI.me && s.u !== 'builder' && !s.rout).length;
+    return `<div class="acts"><button class="btn danger${n ? '' : ' dis'}" data-act="atkThis" data-id="${e.id}">전군 이 목표 공격</button></div><div class="info">${R.isMobile() ? '내 부대를 먼저 누른 뒤 적을 누르면 그 부대만 공격해요' : '내 부대를 고른 뒤 적을 클릭하면 공격해요'}</div>`;
+  };
   UI.refund = function (b) { const d = B[b.type]; let inv = d.cost; if (d.lvCost) for (let i = 0; i < b.lv - 1; i++) inv += d.lvCost[i]; return Math.floor(inv * 0.5); };
   UI.otherBldHTML = function (b) {
     const G = UI.G, pl = G.players[b.owner], d = B[b.type];
-    return `<h3><img src="${R.buildingIcon(b.type, pl.color)}" style="width:30px">${d.name} <small>${esc(pl.name)}</small><button class="btn sm x" data-act="desel" title="닫기">✕</button></h3><div class="hpbar"><i data-hp="${b.id}"></i></div><div class="info" data-hpt="${b.id}"></div>`;
+    return `<h3><img src="${R.buildingIcon(b.type, pl.color)}" style="width:30px">${d.name} <small>${esc(pl.name)}</small><button class="btn sm x" data-act="desel" title="닫기">✕</button></h3><div class="hpbar"><i data-hp="${b.id}"></i></div><div class="info" data-hpt="${b.id}"></div>${UI.atkThisHTML(b)}`;
   };
   UI.villageHTML = function (v) {
     const G = UI.G; const own = v.owner >= 0 ? G.players[v.owner] : null;
@@ -374,6 +380,11 @@
         case 'tab': UI.tab = +el.dataset.i; UI.updatePanel(true); break;
         case 'build': UI.buildOpen = false; UI.startPlace(R.resolveBuild(el.dataset.k, G.players[UI.me].era)); break;
         case 'closeBuild': UI.toggleBuild(false); break;
+        case 'atkThis': {
+          const ids = G.squads().filter((s) => s.owner === UI.me && s.u !== 'builder' && !s.rout).map((s) => s.id);
+          if (!ids.length) { UI.toast('아직 부대가 없어요. 병영에서 부대를 뽑으세요', 'err'); break; }
+          R.App.cmd({ c: 'attack', ids, tid: +el.dataset.id }); UI.toast('전군 공격!', 'alert', 1200); UI.select([]); break;
+        }
         case 'openBuild': UI.toggleBuild(true); break;
         case 'train': R.App.cmd({ c: 'train', bid: +el.dataset.bid, u: el.dataset.u }); break;
         case 'cancel': R.App.cmd({ c: 'cancel', bid: +el.dataset.bid, idx: +el.dataset.i }); break;

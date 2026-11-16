@@ -833,7 +833,7 @@
       } else {
         // 건물 공격
         const bd = B[t.type];
-        let mult = d.dt === 's' ? 1 : d.dt === 'm' ? 0.25 : 0.05;
+        let mult = d.dt === 's' ? 1 : d.dt === 'm' ? 0.75 : 0.15;
         mult *= d.bldMult || 1; if (bd.gate && d.gateMult) mult *= d.gateMult;
         mult *= 1 + (pl.atkBuff || 0);
         const n = d.range ? alive : (d.n > 2 ? Math.min(alive, 12) : alive);
@@ -847,7 +847,6 @@
       }
     }
 
-    // 1타 피해 계산
     // 아주 쉬움 AI: 사람이 직접 공격 명령(공격·공격 이동)을 내리거나 건물을 치면 반격을 시작한다
     provoke(s, t) {
       const tp = this.players[t.owner];
@@ -856,6 +855,7 @@
       tp.provoked = true;
       this.ev.push({ e: 'alert', p: s.owner, msg: tp.name + '이(가) 반격을 시작해요!', x: t.k === 's' ? t.x : t.x + t.s / 2, y: t.k === 's' ? t.y : t.y + t.s / 2 });
     }
+    // 1타 피해 계산
     calcHit(d, s, t, ax, ay) {
       const owner = s ? s.owner : d.owner;
       const pl = this.players[owner];
