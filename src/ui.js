@@ -43,7 +43,7 @@
     document.head.appendChild(st);
     if (R.isMobile()) document.body.classList.add('mobile');
     // 패널·상단바 높이가 바뀌면 왼쪽 버튼 영역을 다시 맞춘다 (프레임당 최대 1번)
-    if (window.ResizeObserver) { let q = 0; const ro = new ResizeObserver(() => { if (!q) q = requestAnimationFrame(() => { q = 0; UI.measure(); }); }); ro.observe($('#panel')); ro.observe($('#topbar')); }
+    if (window.ResizeObserver) { let q = 0; const ro = new ResizeObserver(() => { if (!q) q = requestAnimationFrame(() => { q = 0; UI.measure(); }); }); ro.observe($('#panel')); ro.observe($('#topbar')); ro.observe($('#goal')); }
     $('.ver').textContent = 'v' + R.VERSION;
     // 그룹 버튼
     const gb = $('#groups');
@@ -106,6 +106,7 @@
   UI.measure = function () {
     const tb = $('#topbar'), pn = $('#panel'), st = document.documentElement.style;
     if (tb && tb.offsetHeight) st.setProperty('--tbh', tb.offsetHeight + 'px');
+    if (R.App && R.App.rd && tb) { const g = $('#goal'); R.App.rd.safeTop = tb.offsetHeight + (g && !g.classList.contains('hidden') ? g.offsetHeight + 8 : 0); }
     const bb = $('#bBuild');
     if (pn) st.setProperty('--ph', Math.max(pn.offsetHeight, bb && bb.offsetHeight ? bb.offsetHeight + 8 : 0) + 'px');
   };

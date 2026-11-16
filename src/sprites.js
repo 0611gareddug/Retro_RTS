@@ -1,4 +1,11 @@
 'use strict';
+// 맞았을 때 번쩍이는 흰 실루엣 (스프라이트마다 한 번만 생성)
+R.whiteSprite = function (spr) {
+  if (spr._white) return spr._white;
+  const c = document.createElement('canvas'); c.width = spr.width; c.height = spr.height;
+  const x = c.getContext('2d'); x.drawImage(spr, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = '#ffffff'; x.fillRect(0, 0, c.width, c.height);
+  spr._white = c; return c;
+};
 /* Retro RTS — 픽셀아트 스프라이트 생성기 (코드로 그린 도트) */
 (function () {
   const hex = (h) => { h = h.replace('#', ''); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; };

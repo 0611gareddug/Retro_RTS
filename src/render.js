@@ -26,6 +26,7 @@
       this.cam = { x: 0, y: 0, zoom: 2 };
       this.vis = new Map();
       this.decals = []; this.parts = []; this.projs = []; this.floats = [];
+      this.dmgAcc = new Map(); this.flash = new Map(); this.time = 0; this.hpShow = new Map(); this._dt = 0;
       this.shake = 0; this.quality = 2; this.shakeOn = true; this.uiScale = 1;
       this.sel = new Set(); this.hover = null; this.ghost = null; this.drag = null; this.marks = [];
       this.t = 0;
@@ -42,7 +43,7 @@
     }
     setGame(G, me) {
       this.G = G; this.me = me;
-      this.vis.clear(); this.decals = []; this.parts = []; this.projs = []; this.floats = [];
+      this.vis.clear(); this.decals = []; this.parts = []; this.projs = []; this.floats = []; this.dmgAcc.clear(); this.flash.clear(); this.hpShow.clear();
       this.buildTerrain();
       this.terrVer = -1;
       const p = G.players[me]; const b = G.ents[p.baseId];
@@ -155,8 +156,11 @@
             }
             break;
           }
+          case 'bdmg': { const b = this.G.ents[e.id]; this.addDmg(e.id, e.x, e.y, e.d, true, b ? b.s : 2); break; }
+          case 'die': if (e.n > 0) this.addDmg(e.id, e.x, e.y, e.n, false); break;
           case 'hit':
             if (e.k === 'melee' && Math.random() < 0.5) this.spark(e.x, e.y, 3, '#fff6c8');
+            if (e.k === 'bld') { this.spark(e.x, e.y, 4, '#d8d0c0'); this.dust(e.x, e.y, 2, '#a89a88'); }
             if (e.k === 'spearwall') { this.spark(e.x, e.y, 10, '#ffffff'); this.float(e.x, e.y, '창벽!', '#ffe070'); }
             if (e.k === 'stake') this.float(e.x, e.y, '말뚝!', '#ffb070');
             break;
@@ -184,6 +188,24 @@
     sparkle(x, y) { for (let i = 0; i < 12 && this.parts.length < this.Q.parts; i++) this.parts.push({ x: x + (Math.random() - 0.5) * 2, y: y + (Math.random() - 0.5) * 2, z: 10 + Math.random() * 20, vx: 0, vy: 0, vz: 10, t: 0, life: 1, c: '#fff4a0', s: 1, g: 0, tw: true }); }
     ring(x, y, r, c) { this.floats.push({ ring: true, x, y, r, c, t: 0, life: 0.8 }); }
     float(x, y, txt, c) { if (this.floats.length < 40) this.floats.push({ x, y, txt, c, t: 0, life: 1.3 }); }
+    addDmg(id, x, y, v, bld, size) {
+      if (!this.onScreen(x, y)) return;
+      let a = this.dmgAcc.get(id);
+      if (!a) { a = { x, y, v: 0, t: 0, bld, h: bld ? 4 + (size || 2) * 5 : 6 }; this.dmgAcc.set(id, a); }
+      a.v += v; a.x = x; a.y = y;
+      if (bld) this.flash.set(id, this.time);
+    }
+    flushDmg(dt) {
+      if (!this.dmgAcc.size) return;
+      for (const [id, a] of this.dmgAcc) {
+        a.t += dt; if (a.t < 0.3) continue;
+        this.dmgAcc.delete(id);
+        if (this.floats.length >= 60) continue;
+        const v = Math.round(a.v); if (v <= 0) continue;
+        // 건물: 주황 숫자 / 부대: 쓰러진 병사 수 (빨강)
+        this.floats.push({ x: a.x + (Math.random() - 0.5) * (a.bld ? 1.6 : 0.6), y: a.y + (Math.random() - 0.5) * (a.bld ? 1.6 : 0.6), txt: '-' + v, c: a.bld ? '#ffb03a' : '#ff5a4a', t: 0, life: 1.1, dmg: true, big: a.bld && v >= 100, h: a.h });
+      }
+    }
     decal(x, y, k, extra) {
       const Q = this.Q; if (k === 'corpse' && !Q.corpse) return;
       this.decals.push(Object.assign({ x, y, k, t: 0, v: (Math.random() * 1000) | 0 }, extra || {}));
@@ -245,6 +267,8 @@
       this.drawMarks(ctx, dt);
       // 화면 공간 UI
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      this.time += dt; this._dt = dt;
+      this.flushDmg(dt);
       this.drawBars(ctx, alpha);
       this.drawFloats(ctx, dt);
       if (this.drag) {
@@ -452,7 +476,15 @@
       }
       const col = G.players[e.owner].color;
       const spr = R.buildingSprite(e.type, col, e.type === 'base' ? Math.min(3, e.lv) : e.lv, e.built);
-      ctx.drawImage(spr, Math.round(wx - spr._ox), Math.round(wy - spr._oy));
+      const fl = this.flash.get(e.id);
+      const ft = fl != null ? this.time - fl : 9;
+      const jx = ft < 0.12 ? (Math.random() < 0.5 ? -1 : 1) : 0;
+      ctx.drawImage(spr, Math.round(wx - spr._ox) + jx, Math.round(wy - spr._oy));
+      if (ft < 0.12) {
+        ctx.globalAlpha = 0.55 * (1 - ft / 0.12);
+        ctx.drawImage(R.whiteSprite(spr), Math.round(wx - spr._ox) + jx, Math.round(wy - spr._oy));
+        ctx.globalAlpha = 1;
+      } else if (fl != null && ft > 1) this.flash.delete(e.id);
       // 불타기
       if (this.Q.fire && e.built >= 1 && e.hp < e.maxHp * 0.5 && !B[e.type].line) {
         const n = e.hp < e.maxHp * 0.25 ? 3 : 1;
@@ -580,17 +612,30 @@
         if (s.grp) { ctx.fillStyle = '#ffe070'; ctx.fillText(String(s.grp), x - 7 * sc, y + h / 2); }
         if (d.deploy && s.dep >= 0 && s.dep < d.deploy && s.dep > 0) { ctx.fillStyle = '#7ab0ff'; ctx.fillRect(x, y - 3, w * s.dep / d.deploy, 2); }
       }
-      // 건물 체력 (손상되었거나 선택됨)
+      // 건물 체력 (손상되었거나 선택됨, 최근에 맞았으면 크게)
       for (const b of G.buildings()) {
-        if (!(b.hp < b.maxHp * 0.999 && b.built >= 1) && !this.sel.has(b.id)) continue;
+        const recent = G.time - b.lastHit < 4;
+        if (!(b.hp < b.maxHp * 0.999 && b.built >= 1) && !this.sel.has(b.id) && !recent) continue;
         const c = { x: b.x + b.s / 2, y: b.y + b.s / 2 };
         const spr = R.buildingSprite(b.type, G.players[b.owner].color, b.type === 'base' ? Math.min(3, b.lv) : b.lv, b.built);
         const sp = this.w2s(R.isoX(b.x, b.y), R.isoY(b.x, b.y) - spr._oy + (spr._top || 0) - 6);
         if (sp.x < -40 || sp.y < -40 || sp.x > this.W + 40 || sp.y > this.H + 40) continue;
-        const w = Math.round((14 + b.s * 8) * sc);
-        ctx.fillStyle = 'rgba(16,10,20,0.78)'; ctx.fillRect(sp.x - w / 2 - 1, sp.y - 1, w + 2, 5 * sc);
-        const f = b.hp / b.maxHp;
-        ctx.fillStyle = f > 0.5 ? '#6ad04a' : f > 0.25 ? '#e8c22c' : '#e04a3a'; ctx.fillRect(sp.x - w / 2, sp.y, w * f, 3 * sc);
+        const big = recent || this.sel.has(b.id);
+        if (big && sp.y < (this.safeTop || 0) + 14 * sc) sp.y = Math.min((this.safeTop || 0) + 14 * sc, this.w2s(R.isoX(b.x + b.s, b.y + b.s), R.isoY(b.x + b.s, b.y + b.s)).y - 10);
+        const w = Math.round((14 + b.s * 8) * sc * (big ? 1.5 : 1)), h = Math.max(2, Math.round((big ? 6 : 3) * sc));
+        const f = Math.max(0, b.hp / b.maxHp);
+        // 잔상: 깎인 부분이 하얗게 남았다가 천천히 줄어듦
+        let shown = this.hpShow.get(b.id); if (shown == null || shown < f) shown = f;
+        shown = Math.max(f, shown - 0.5 * this._dt); this.hpShow.set(b.id, shown);
+        ctx.fillStyle = 'rgba(16,10,20,0.85)'; ctx.fillRect(sp.x - w / 2 - 1, sp.y - 1, w + 2, h + 2);
+        if (shown > f) { ctx.fillStyle = '#fff4d8'; ctx.fillRect(sp.x - w / 2, sp.y, w * shown, h); }
+        ctx.fillStyle = f > 0.5 ? '#6ad04a' : f > 0.25 ? '#e8c22c' : '#e04a3a'; ctx.fillRect(sp.x - w / 2, sp.y, w * f, h);
+        if (big) {
+          ctx.font = `bold ${Math.round(10 * sc)}px sans-serif`; ctx.textAlign = 'center';
+          const txt = Math.ceil(Math.max(0, b.hp)) + ' / ' + Math.round(b.maxHp);
+          ctx.fillStyle = '#1a1220'; ctx.fillText(txt, sp.x + 1, sp.y - 4 * sc + 1); ctx.fillStyle = '#fff3d8'; ctx.fillText(txt, sp.x, sp.y - 4 * sc);
+          ctx.textAlign = 'left';
+        }
         void c;
       }
     }
@@ -606,6 +651,14 @@
           ctx.beginPath(); ctx.ellipse(sp.x, sp.y, r, r / 2, 0, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1; continue;
         }
         ctx.globalAlpha = f.t > f.life - 0.4 ? (f.life - f.t) / 0.4 : 1;
+        if (f.dmg) {
+          const pop = f.t < 0.12 ? 1 + (0.12 - f.t) * 5 : 1;
+          ctx.font = `bold ${Math.round((f.big ? 19 : 15) * Math.max(0.85, this.uiScale) * pop)}px sans-serif`;
+          const y = Math.max((this.safeTop || 0) + 56, sp.y - (f.h || 0) * this.cam.zoom - 10) - f.t * 28;
+          ctx.fillStyle = '#1a1220'; ctx.fillText(f.txt, sp.x + 1, y + 1); ctx.fillText(f.txt, sp.x - 1, y + 1);
+          ctx.fillStyle = f.c; ctx.fillText(f.txt, sp.x, y);
+          ctx.globalAlpha = 1; continue;
+        }
         ctx.font = `bold ${Math.round(11 * this.uiScale)}px sans-serif`;
         const y = sp.y - 30 - f.t * 18;
         ctx.fillStyle = '#1a1220'; ctx.fillText(f.txt, sp.x + 1, y + 1); ctx.fillStyle = f.c; ctx.fillText(f.txt, sp.x, y);

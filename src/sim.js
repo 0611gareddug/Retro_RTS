@@ -975,6 +975,7 @@
     damageBuilding(b, dmg, from, u) {
       if (!this.ents[b.id]) return;
       b.hp -= dmg; b.lastHit = this.time;
+      this.ev.push({ e: 'bdmg', id: b.id, d: dmg, x: b.x + b.s / 2, y: b.y + b.s / 2 });
       const pl = this.players[b.owner];
       if (b.type === 'base' && (!pl._alertT || this.time - pl._alertT > 15)) { pl._alertT = this.time; this.ev.push({ e: 'alert', p: b.owner, msg: '본성이 공격받고 있습니다!', x: b.x + 2, y: b.y + 2 }); }
       else if (b.type !== 'base' && (!pl._alertB || this.time - pl._alertB > 20)) { pl._alertB = this.time; this.ev.push({ e: 'alert', p: b.owner, msg: B[b.type].name + '이(가) 공격받고 있습니다', x: b.x + b.s / 2, y: b.y + b.s / 2, minor: true }); }
